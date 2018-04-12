@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Vector;
 
 import android.app.Application;
+import android.app.Instrumentation;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
@@ -85,8 +87,33 @@ public class AMSHook implements Callback {
 			}
 			register_hook();
 			hookLaunchActivity();
+			hookInstrumentation();
 		} catch (NameNotFoundException e) {
 			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private void hookInstrumentation()  {
+		// TODO Auto-generated method stub
+		try {
+			Class<?> activityThread=Class.forName("android.app.ActivityThread");
+	        Method currentActivityThread=activityThread.getDeclaredMethod("currentActivityThread");
+	        currentActivityThread.setAccessible(true);
+	        //获取主线程对象
+	        Object activityThreadObject=currentActivityThread.invoke(null);
+	        Context mBase=(Context) getFiledValue(activityThread, "appContext", activityThreadObject);
+            Log.e("mBase", mBase.getClass().getName());
+	        //获取Instrumentation字段
+	        Field mInstrumentation=activityThread.getDeclaredField("mInstrumentation");
+	        mInstrumentation.setAccessible(true);
+	        Instrumentation instrumentation= (Instrumentation) mInstrumentation.get(activityThreadObject);
+	        CustomInstrumentation customInstrumentation=new CustomInstrumentation(instrumentation);
+	        //替换掉原来的,就是把系统的instrumentation替换为自己的Instrumentation对象
+	        mInstrumentation.set(activityThreadObject,customInstrumentation);
+	        Log.d("[app]","Hook Instrumentation成功");
+		} catch (Exception e) {
+			// TODO: handle exception
 			e.printStackTrace();
 		}
 	}

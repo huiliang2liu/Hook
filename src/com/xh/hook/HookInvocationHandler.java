@@ -2,12 +2,12 @@ package com.xh.hook;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.os.IBinder;
 import android.util.Log;
 
 /**
@@ -76,6 +76,17 @@ public class HookInvocationHandler implements InvocationHandler {
 					}
 				}
 			}
+		} else if (method_name.equals("activityResumed")) {
+			IBinder iBinder = (IBinder) args[0];
+			Log.d("[app]", "执行activityResumed方法了,参数toke为" + iBinder);
+			Class<?> clazz = Class.forName("android.app.ActivityThread");
+			Method method1 = clazz.getDeclaredMethod("currentActivityThread");
+			Object object = method1.invoke(null);
+
+			Method getActivity = clazz.getDeclaredMethod("getActivity",
+					IBinder.class);
+			Activity mActivity = (Activity) getActivity.invoke(object, iBinder);
+			Log.e("[app]", "Hook AMS以后:当前的Activity为:" + mActivity);
 		}
 		return method.invoke(ams, args);
 	}
